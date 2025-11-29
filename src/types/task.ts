@@ -17,6 +17,7 @@ export interface Task {
   priority:      number;
   dueDate:       number; // 时间戳 (秒)
   createdAt:     number; // 时间戳 (秒)
+  completedAt:   number;
 }
 
 // 对应后端 CreateTaskReq

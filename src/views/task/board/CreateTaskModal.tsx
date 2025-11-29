@@ -54,10 +54,10 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.typeId) {
-      alert('请填写必填项');
-      return;
-    }
+    if (!formData.title || !formData.typeId || !formData.description || !dateStr) {
+        alert('请填写所有必填项（标题、类型、截止时间、描述）');
+        return;
+      }
 
     setLoading(true);
     try {
@@ -165,9 +165,9 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
 
             {/* 截止日期 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">截止日期</label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">截止日期 <span className="text-red-500">*</span></label>
               <input
-                type="date"
+                type="datetime-local"
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"
                 value={dateStr}
                 onChange={e => setDateStr(e.target.value)}
@@ -177,7 +177,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
 
           {/* 描述 */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">详细描述</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">详细描述 <span className="text-red-500">*</span></label>
             <textarea
               className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none transition"
               rows={3}
