@@ -1,0 +1,7 @@
+@import "tailwindcss";
+
+@theme {
+  /* 自定义颜色，配合你的设计 */
+  --color-primary: #3b82f6;
+  --color-secondary: #64748b;
+}
