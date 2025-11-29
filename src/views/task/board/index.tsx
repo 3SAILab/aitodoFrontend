@@ -11,16 +11,17 @@ const COLUMNS = [
     { id: 'DONE', title: '已完成', color: 'bg-green-50 border-green-200' }
 ]
 
-// 格式化日期：确保显示 年-月-日 时:分
+// 方案一：显示 UTC 时间（和数据库完全一致）
 const formatDate = (timestamp: number) => {
     if (!timestamp) return '无'
     const date = new Date(timestamp * 1000)
     
-    const year = date.getFullYear()
-    const month = (date.getMonth() + 1).toString().padStart(2, '0')
-    const day = date.getDate().toString().padStart(2, '0')
-    const hour = date.getHours().toString().padStart(2, '0')
-    const minute = date.getMinutes().toString().padStart(2, '0')
+    // 用 UTC 系列方法，直接读取 UTC 时间，不加时区偏移
+    const year = date.getUTCFullYear()
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+    const day = date.getUTCDate().toString().padStart(2, '0')
+    const hour = date.getUTCHours().toString().padStart(2, '0')
+    const minute = date.getUTCMinutes().toString().padStart(2, '0')
 
     return `${year}-${month}-${day} ${hour}:${minute}`
 }
@@ -160,7 +161,6 @@ export default function TaskBoard() {
                             {tasks.filter(t => t.status === col.id).map(task => {
                                 // [修改] 在这里计算是否逾期
                                 const overdue = isOverdue(task)
-                                
                                 return (
                                     <div 
                                         key={task.id} 
@@ -201,7 +201,7 @@ export default function TaskBoard() {
                                         <div className="border-t border-gray-100/50 pt-2 mt-1 space-y-1 text-xs text-gray-500">
                                             <div className="flex justify-between">
                                                 <span>创建:</span>
-                                                <span>{formatDate(task.createdAt)}</span>
+                                                <span>{console.log('CreatedAt 原始值:', task.createdAt) || formatDate(task.createdAt)}</span>
                                             </div>
                                             {task.dueDate ? (
                                                 <div className={clsx(
