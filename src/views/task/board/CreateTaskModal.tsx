@@ -9,20 +9,6 @@ interface CreateTaskModalProps {
   onSuccess: () => void;
 }
 
-const formatDate = (timestamp: number) => {
-    if (!timestamp) return '无'
-    const date = new Date(timestamp * 1000)
-    
-    // 用 UTC 系列方法，直接读取 UTC 时间，不加时区偏移
-    const year = date.getUTCFullYear()
-    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
-    const day = date.getUTCDate().toString().padStart(2, '0')
-    const hour = date.getUTCHours().toString().padStart(2, '0')
-    const minute = date.getUTCMinutes().toString().padStart(2, '0')
-
-    return `${year}-${month}-${day} ${hour}:${minute}`
-}
-
 export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTaskModalProps) {
   const [loading, setLoading] = useState(false);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
@@ -30,7 +16,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
 
   // 表单状态
   const [formData, setFormData] = useState<CreateTaskReq>({
-    title: '',
+    title: '', // 默认为空字符串
     typeId: '',
     description: '',
     salesPersonId: '',
@@ -68,8 +54,9 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.typeId || !formData.description) {
-        alert('请填写所有必填项（标题、类型、描述）');
+    // 修改：只校验任务类型，标题不再校验
+    if (!formData.typeId) {
+        alert('请选择任务类型');
         return;
       }
 
@@ -80,7 +67,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
       if (dateStr) {
         submitData.dueDate = Math.floor(new Date(dateStr).getTime() / 1000);
       } else {
-        submitData.dueDate = 0
+        submitData.dueDate = 0;
       }
 
       await createTask(submitData);
@@ -93,7 +80,8 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
         description: '',
         salesPersonId: '',
         priority: 0,
-        dueDate: 0
+        dueDate: 0,
+        assigneeId: ''
       });
       setDateStr('');
     } catch (error) {
@@ -120,18 +108,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
         {/* Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
           
-          {/* 标题 */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">任务标题 <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition"
-              value={formData.title}
-              onChange={e => setFormData({ ...formData, title: e.target.value })}
-              placeholder="请输入任务标题"
-              required
-            />
-          </div>
+          {/* 标题输入框已移除，formData.title 默认为 '' */}
 
           <div className="grid grid-cols-2 gap-4">
             {/* 任务类型 */}
