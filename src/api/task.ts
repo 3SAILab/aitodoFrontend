@@ -62,3 +62,19 @@ export const updateSalesPerson = (id: string, data: Omit<UpdateSalesReq, 'id'>) 
 export const deleteSalesPerson = (id: string) => {
     return request.delete(`/task/sales/${id}`)
 }
+
+export interface TaskProgress {
+    id: string
+    taskId: string
+    content: string
+    createdBy: string
+    createdAt: number
+}
+
+export const getTaskProgress = (taskId: string) => {
+    return request.get<any, { list: TaskProgress[]}>(`/task/tasks/${taskId}/progress`)
+}
+
+export const createTaskProgress = (taskId: string, content: string) => {
+    return request.post<{id: string}>(`/task/tasks/${taskId}/progress`, { content })
+}

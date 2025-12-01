@@ -4,6 +4,7 @@ import type { Task, TaskType } from "@/types"
 import CreateTaskModal from "./CreateTaskModal"
 import { useAuthStore } from '@/store/authStore'
 import clsx from 'clsx'
+import TaskDetailModal from "./TaskDetailModal"
 
 const COLUMNS = [
     { id: 'TODO', title: '待办事项', color: 'bg-gray-100 border-gray-200' },
@@ -54,6 +55,8 @@ export default function TaskBoard() {
     const [tasks, setTasks] = useState<Task[]>([])
     const [types, setTypes] = useState<TaskType[]>([])
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+    const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+
     const user = useAuthStore(state => state.user)
 
     const isOverdue = (task: Task) => {
@@ -171,7 +174,7 @@ export default function TaskBoard() {
                                                 ? "bg-red-50 border-red-200" // 逾期样式
                                                 : "bg-white border-gray-100" // 正常样式
                                         )}
-                                        onClick={() => moveTask(task)}
+                                        onClick={() => setSelectedTask(task)}
                                     >
                                         <div className="flex items-center gap-2">
                                             <span
@@ -201,7 +204,7 @@ export default function TaskBoard() {
                                         <div className="border-t border-gray-100/50 pt-2 mt-1 space-y-1 text-xs text-gray-500">
                                             <div className="flex justify-between">
                                                 <span>创建:</span>
-                                                <span>{console.log('CreatedAt 原始值:', task.createdAt) || formatDate(task.createdAt)}</span>
+                                                <span>formatDate(task.createdAt)</span>
                                             </div>
                                             {task.dueDate ? (
                                                 <div className={clsx(
@@ -239,6 +242,13 @@ export default function TaskBoard() {
                     </div>
                 ))}
             </div>
+            <TaskDetailModal
+                isOpen={!!selectedTask}
+                task={selectedTask}
+                onClose={() => setSelectedTask(null)}
+                onUpdate={fetchData}
+            />
+
             <CreateTaskModal
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}

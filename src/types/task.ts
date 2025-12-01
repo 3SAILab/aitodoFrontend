@@ -106,3 +106,13 @@ export interface UpdateSalesReq {
 export interface ListSalesResp {
   list: SalesPerson[];
 }
+
+
+export interface TaskProgress {
+  id: string;
+  taskId: string;
+  content: string;
+  createdBy: string;
+  createdAt: number;
+}
+
