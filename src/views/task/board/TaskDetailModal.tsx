@@ -10,6 +10,20 @@ interface Props {
     onUpdate: () => void
 }
 
+const formatDate = (timestamp: number) => {
+    if (!timestamp) return '无'
+    const date = new Date(timestamp * 1000)
+    
+    // 用 UTC 系列方法，直接读取 UTC 时间，不加时区偏移
+    const year = date.getUTCFullYear()
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+    const day = date.getUTCDate().toString().padStart(2, '0')
+    const hour = date.getUTCHours().toString().padStart(2, '0')
+    const minute = date.getUTCMinutes().toString().padStart(2, '0')
+
+    return `${year}-${month}-${day} ${hour}:${minute}`
+}
+
 export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Props) {
     const [logs, setLogs] = useState<TaskProgress[]>([])
     const [newContent, setNewContent] = useState('')
@@ -57,7 +71,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
                 </div>
 
                 <div className="flex-1 overflow-hidden flex">
-                    <div className="w-1/3 p-6 border-rbg-gray-50 overflow-y-auto">
+                    {/* <div className="w-1/3 p-6 border-r border-gray-100 overflow-y-auto">
                         <h4 className="font-medium mb-2 text-gray-700">任务描述</h4>
                         <p className="text-sm text-gray-600 whitespace-pre-wrap">{task.description}</p>
 
@@ -72,7 +86,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
                                 </button>
                             )}
                         </div>
-                    </div>
+                    </div> */}
                     
                     <div className="w-2/3 p-6 flex flex-col">
                         <h4 className="font-medium">
@@ -85,7 +99,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
                                     <div className="bg-gray-100 p-3 rounded-lg rounded-tl-none flex-1">
                                         <p className="text-sm text-gray-800 whitespace-pre-wrap">{log.content}</p>
                                         <div className="text-xs text-gray-400 mt-1 text-right">
-                                            {new Date(log.createdAt * 1000).toLocaleString()}
+                                            {formatDate(log.createdAt)}
                                         </div>
                                     </div>
                                 </div>

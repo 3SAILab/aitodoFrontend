@@ -9,6 +9,20 @@ interface CreateTaskModalProps {
   onSuccess: () => void;
 }
 
+const formatDate = (timestamp: number) => {
+    if (!timestamp) return '无'
+    const date = new Date(timestamp * 1000)
+    
+    // 用 UTC 系列方法，直接读取 UTC 时间，不加时区偏移
+    const year = date.getUTCFullYear()
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+    const day = date.getUTCDate().toString().padStart(2, '0')
+    const hour = date.getUTCHours().toString().padStart(2, '0')
+    const minute = date.getUTCMinutes().toString().padStart(2, '0')
+
+    return `${year}-${month}-${day} ${hour}:${minute}`
+}
+
 export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTaskModalProps) {
   const [loading, setLoading] = useState(false);
   const [taskTypes, setTaskTypes] = useState<TaskType[]>([]);
@@ -54,8 +68,8 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!formData.title || !formData.typeId || !formData.description || !dateStr) {
-        alert('请填写所有必填项（标题、类型、截止时间、描述）');
+    if (!formData.title || !formData.typeId || !formData.description) {
+        alert('请填写所有必填项（标题、类型、描述）');
         return;
       }
 
@@ -65,6 +79,8 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
       const submitData = { ...formData };
       if (dateStr) {
         submitData.dueDate = Math.floor(new Date(dateStr).getTime() / 1000);
+      } else {
+        submitData.dueDate = 0
       }
 
       await createTask(submitData);
@@ -165,7 +181,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
 
             {/* 截止日期 */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">截止日期 <span className="text-red-500">*</span></label>
+              <label className="block text-sm font-medium text-gray-700 mb-1">截止日期</label>
               <input
                 type="datetime-local"
                 className="w-full rounded-lg border border-gray-300 px-3 py-2 focus:ring-2 focus:ring-blue-500 outline-none"

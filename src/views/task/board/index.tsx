@@ -204,7 +204,7 @@ export default function TaskBoard() {
                                         <div className="border-t border-gray-100/50 pt-2 mt-1 space-y-1 text-xs text-gray-500">
                                             <div className="flex justify-between">
                                                 <span>创建:</span>
-                                                <span>formatDate(task.createdAt)</span>
+                                                <span>{formatDate(task.createdAt)}</span>
                                             </div>
                                             {task.dueDate ? (
                                                 <div className={clsx(
