@@ -2,6 +2,8 @@ import React, { useState, useEffect } from "react";
 import { getTaskProgress, createTaskProgress, UpdateTask } from "@/api/task";
 import type { Task, TaskProgress } from "@/types";
 import { X, Send, Clock } from "lucide-react";
+import { useAuthStore } from "@/store/authStore";
+import { formatDate } from "@/utils/date";
 
 interface Props {
     task: Task | null
@@ -10,24 +12,11 @@ interface Props {
     onUpdate: () => void
 }
 
-const formatDate = (timestamp: number) => {
-    if (!timestamp) return '无'
-    const date = new Date(timestamp * 1000)
-    
-    // 用 UTC 系列方法，直接读取 UTC 时间，不加时区偏移
-    const year = date.getUTCFullYear()
-    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
-    const day = date.getUTCDate().toString().padStart(2, '0')
-    const hour = date.getUTCHours().toString().padStart(2, '0')
-    const minute = date.getUTCMinutes().toString().padStart(2, '0')
-
-    return `${year}-${month}-${day} ${hour}:${minute}`
-}
-
 export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Props) {
     const [logs, setLogs] = useState<TaskProgress[]>([])
     const [newContent, setNewContent] = useState('')
     const [loading, setLoading] = useState(false)
+    const currentUser = useAuthStore(state => state.user)
 
     useEffect(() => {
         if (task && isOpen) {
@@ -40,24 +29,25 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
 
         if (!task || !newContent.trim()) return
 
+        if (task.status === 'DONE') {
+            alert('任务已完成，无法添加进度');
+            return;
+        }
+
         try {
             await createTaskProgress(task.id, newContent)
             setNewContent('')
             const res = await getTaskProgress(task.id)
-            console.log(res)
             setLogs(res.list || [])
         } catch (error) {
             alert("记录失败")
         }
     }
 
-    const handleStatusChange = async (newStatus: 'TODO' | 'DOING' | 'DONE') => {
-        if (!task) return
-        await UpdateTask(task.id, { ...task, status: newStatus })
-        onUpdate()
-        onClose()
-    }
     if (!isOpen || !task) return null
+
+    const isCreator = currentUser?.id === task.creatorId
+    const isDone = task.status === 'DONE'
 
     return (
         <div className="fixed inset-0 flex z-50 items-center justify-center bg-black/50 backdrop-blur-sm">
@@ -71,23 +61,6 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
                 </div>
 
                 <div className="flex-1 overflow-hidden flex">
-                    {/* <div className="w-1/3 p-6 border-r border-gray-100 overflow-y-auto">
-                        <h4 className="font-medium mb-2 text-gray-700">任务描述</h4>
-                        <p className="text-sm text-gray-600 whitespace-pre-wrap">{task.description}</p>
-
-                        <div className="mt-8 space-y-3">
-                            <h4 className="font-medium text-gray-700">操作</h4>
-                            {task.status != 'DONE' && (
-                                <button
-                                    onClick={() => handleStatusChange('DONE')}
-                                    className="w-full py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
-                                >
-                                    ✅ 标记为完成
-                                </button>
-                            )}
-                        </div>
-                    </div> */}
-                    
                     <div className="w-2/3 p-6 flex flex-col">
                         <h4 className="font-medium">
                             <Clock size={16}/> 进度记录 / 中间结果
@@ -105,8 +78,8 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
                                 </div>
                             ))}
                         </div>
-
-                        <form onSubmit={handleSubmit} className="border-t pt-4">
+                        {isCreator && !isDone ? (
+                            <form onSubmit={handleSubmit} className="border-t pt-4">
                             <div className="flex gap-2">
                                 <input
                                     className="flex-1 border rounded-lg px-4 py-2 text-sm focus-ring-2 focus:ring-blue-500 outline-none"
@@ -119,12 +92,14 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
                                 </button>
                             </div>
                         </form>
+                        ) : (
+                            <div className="border-t pt-4 text-center text-sm text-gray-400 bg-gray-50 py-2 rounded">
+                                {isDone ? "任务已完成，无法添加记录" : "仅任务创建者可添加记录"}
+                            </div>
+                        )}
                     </div>
-
                 </div>
             </div>
-
-
         </div>
     )
 

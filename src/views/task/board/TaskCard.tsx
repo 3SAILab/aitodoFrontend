@@ -1,22 +1,28 @@
-import type { Task, TaskType } from "@/types";
+import type { Task, TaskType, User } from "@/types";
 import { formatDate, formatDuration, isTaskOverdue } from "@/utils/date";
 import clsx from "clsx";
 import { Button } from "@/components/Common/Button";
+import { useAuthStore } from "@/store/authStore";
+
 
 interface TaskCardProps {
     task: Task
     types: TaskType[]
+    users?: User[]
     onClick: (task: Task) => void
     onMove: (task: Task) => void
 }
 
-export default function TaskCard({ task, types, onClick, onMove }: TaskCardProps) {
+export default function TaskCard({ task, types, users = [], onClick, onMove }: TaskCardProps) {
     const overdue = isTaskOverdue(task)
-
+    const currentUser = useAuthStore(state => state.user)
     const typeInfo = types.find(t => t.id === task.typeId)
     const typeColor = typeInfo?.colorCode || '#9ca3af'
     const typeName = typeInfo?.name || '未知类型'
     const durationText = formatDuration(task.createdAt, task.completedAt, task.status)
+
+    const assignee = users.find(u => u.id === task.creatorId)
+    const isCreator = currentUser?.id === task.creatorId
 
     return (
         <div className={clsx(
@@ -35,6 +41,12 @@ export default function TaskCard({ task, types, onClick, onMove }: TaskCardProps
                     {task.title}
                     {overdue && <span className="ml-2 text-xs bg-red-100 text-red-600 px-1 rounded">已逾期</span>}
                 </h4>
+                {assignee && (
+                    <div className="text-xs text-blue-600 ">
+                        <span className="opacity-70">负责人:</span>
+                        <span className="font-medium">{assignee.username}</span>
+                    </div>
+                )}
                 <p className="text-xs text-gray-600 line-clamp-3 bg-gray-50/50 p-2 rounded ">
                     {task.description || '暂无描述'}
                 </p>
@@ -55,7 +67,7 @@ export default function TaskCard({ task, types, onClick, onMove }: TaskCardProps
                 </div>
             </div>
             <div className="mt-1 pt-1 flex justify-end">
-                {task.status !== 'DONE' && (
+                {task.status !== 'DONE' && isCreator && (
                     <Button
                         variant="ghost"
                         className="px-2 py-1 text-xs h-auto"

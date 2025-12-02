@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { createTask, getTaskTypes, getSalesPersons } from '@/api/task';
 import type { TaskType, SalesPerson, CreateTaskReq } from '@/types';
-import { X } from 'lucide-react';
 import Modal from '@/components/Common/Modal';
 import { FormInput } from '@/components/Common/FormInput';
 import { FormTextArea } from '@/components/Common/FormTextarea';

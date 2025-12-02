@@ -1,12 +1,14 @@
 import { useEffect, useState } from "react"
 import { getTasks, UpdateTask, getTaskTypes } from "@/api/task"
-import type { Task, TaskType } from "@/types"
+import type { Task, TaskType, User } from "@/types"
 import CreateTaskModal from "./CreateTaskModal"
 import { useAuthStore } from '@/store/authStore'
 import clsx from 'clsx'
 import TaskDetailModal from "./TaskDetailModal"
 import TaskCard from "./TaskCard"
 import { Button } from "@/components/Common/Button"
+import { getUsers } from "@/api/auth";
+
 
 const COLUMNS = [
     { id: 'TODO', title: '待办事项', color: 'bg-gray-100 border-gray-200' },
@@ -19,13 +21,14 @@ export default function TaskBoard() {
     const [types, setTypes] = useState<TaskType[]>([])
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [selectedTask, setSelectedTask] = useState<Task | null>(null)
+    const [users, setUsers] = useState<User[]>([])
     const user = useAuthStore(state => state.user)
 
     const fetchData = async () => {
         try {
-            const [taskRes, typeRes] = await Promise.all([getTasks(), getTaskTypes()])
+            const [taskRes, typeRes, usersRes] = await Promise.all([getTasks(), getTaskTypes(), getUsers()])
             const allTasks = taskRes.list || []
-            
+            const allUsers = usersRes.list || []
             if (user?.role === 'admin') {
                 setTasks(allTasks)
             } else {
@@ -33,6 +36,9 @@ export default function TaskBoard() {
                     task.creatorId === user?.id || task.assigneeId === user?.id
                 ))
             }
+
+            // TODO: 普通用户肯定不能获取所有的users
+            setUsers(usersRes.list || []) // [新增]
             setTypes(typeRes.list || [])
         } catch (error) {
             console.error("加载数据失败", error)
@@ -86,6 +92,7 @@ export default function TaskBoard() {
                                 <TaskCard 
                                     key={task.id}
                                     task={task}
+                                    users={users}
                                     types={types}
                                     onClick={setSelectedTask}
                                     onMove={moveTask}
