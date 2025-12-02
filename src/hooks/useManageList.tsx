@@ -39,7 +39,7 @@ export function useManageList<T extends { id: string }>(
             alert('删除失败')
         }
     }
-    return { list, loading, fetchData, handleDelete }
+    return { list, setList, loading, refresh: fetchData, handleDelete }
 }
 
 
