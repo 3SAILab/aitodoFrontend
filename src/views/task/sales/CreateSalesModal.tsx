@@ -42,7 +42,7 @@ export default function CreateSalesModal({ isOpen, onClose, onSuccess }: Props) 
                 <FormInput 
                     label="电话"
                     value={phone}
-                    onChange={e => setName(e.target.value)}
+                    onChange={e => setPhone(e.target.value)}
                 />
                 <button
                     type="submit"
