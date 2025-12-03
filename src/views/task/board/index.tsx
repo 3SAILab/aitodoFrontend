@@ -1,6 +1,6 @@
 import { useEffect, useState, useMemo } from "react"
-import { getTasks, UpdateTask, getTaskTypes } from "@/api/task"
-import type { Task, TaskType, User } from "@/types"
+import { getTasks, UpdateTask, getTaskTypes, deleteTask, getSalesPersons } from "@/api/task"
+import type { Task, TaskType, User, SalesPerson } from "@/types"
 import CreateTaskModal from "./CreateTaskModal"
 import { useAuthStore } from '@/store/authStore'
 import clsx from 'clsx'
@@ -10,6 +10,7 @@ import { Button } from "@/components/Common/Button"
 import { getUsers } from "@/api/auth";
 import { isSameDay, isBeforeOrSameDay } from "@/utils/date";
 import { Calendar, Layers } from "lucide-react";
+import ConfirmModal from "@/components/Common/ConfirmModal"
 
 const COLUMNS = [
     { id: 'TODO', title: '待办事项', color: 'bg-gray-100 border-gray-200' },
@@ -25,7 +26,10 @@ export default function TaskBoard() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
     const [selectedTask, setSelectedTask] = useState<Task | null>(null)
     const [users, setUsers] = useState<User[]>([])
-    
+    const [salesPersons, setSalesPersons] = useState<SalesPerson[]>([])
+    const [movingTask, setMovingTask] = useState<Task | null>(null)
+    const [isMoveLoading, setIsMoveLoading] = useState(false)
+
     // --- 新增过滤状态 ---
     const [filterMode, setFilterMode] = useState<FilterMode>('focus'); // 默认 'focus'
     // 默认选中今天 (使用本地时间 YYYY-MM-DD)
@@ -34,7 +38,6 @@ export default function TaskBoard() {
         const year = now.getUTCFullYear();
         const month = String(now.getUTCMonth() + 1).padStart(2, '0');
         const day = String(now.getUTCDate()).padStart(2, '0');
-        // console.log(`${year}-${month}-${day}`)
         return `${year}-${month}-${day}`;
 
     });
@@ -43,13 +46,16 @@ export default function TaskBoard() {
 
     const fetchData = async () => {
         try {
-            const [taskRes, typeRes, usersRes] = await Promise.all([getTasks(), getTaskTypes(), getUsers()])
+            
+            const [taskRes, typeRes, usersRes, salesRes] = await Promise.all([
+                getTasks(), getTaskTypes(), getUsers(), getSalesPersons()
+            ])
             const allTasks = (taskRes.list || []).map(task => ({
                 ...task,
                 completedAt: task.complete_at,
             }))
+
             if (user?.role === 'admin') {
-                console.log(allTasks)
                 setTasks(allTasks)
             } else {
                 setTasks(allTasks.filter(task => 
@@ -60,6 +66,7 @@ export default function TaskBoard() {
 
             setUsers(usersRes.list || [])
             setTypes(typeRes.list || [])
+            setSalesPersons(salesRes.list || [])
         } catch (error) {
             console.error("加载数据失败", error)
         }
@@ -68,6 +75,33 @@ export default function TaskBoard() {
     useEffect(() => {
         fetchData()
     }, [])
+
+    const handleMoveClick = (task: Task) => {
+        setMovingTask(task)
+    }
+    
+    const handleConfirmMove = async () => {
+        if (!movingTask) return
+        
+        const nextMap: Record<string, {s: string, t: string}> = {
+            'TODO': { s: 'DOING', t: '进行中'},
+            'DOING': { s: 'DONE', t: '已完成'},
+        }
+        const next = nextMap[movingTask.status]
+        if (!next) return
+
+        setIsMoveLoading(true)
+        try {
+            await UpdateTask(movingTask.id, {...movingTask, status: next.s})
+            setTasks(prev => prev.map(t => t.id === movingTask.id ? {...t, status: next.s as any, completedAt: next.s === 'DONE' ? Math.floor(Date.now() / 1000) : t.completedAt } : t))
+            setMovingTask(null) // 关闭弹窗
+        } catch(e) {
+            alert("更新失败");
+            fetchData();
+        } finally {
+            setIsMoveLoading(false)
+        }
+    }
 
     const moveTask = async (task: Task) => {
         const nextMap: Record<string, {s: string, t: string}> = {
@@ -87,6 +121,18 @@ export default function TaskBoard() {
         }
     }
 
+    const handleDeleteTask = async (id: string) => {
+        if (!confirm('确定要删除该任务吗？此操作无法撤销。')) return;
+        try {
+            await deleteTask(id);
+            // 乐观更新，直接从本地移除，减少加载闪烁
+            setTasks(prev => prev.filter(t => t.id !== id));
+        } catch(e) {
+            alert("删除失败");
+            fetchData(); // 失败回滚
+        }
+    }
+
     // --- 核心过滤逻辑 ---
     const filteredTasks = useMemo(() => {
         if (filterMode === 'all') return tasks;
@@ -98,10 +144,8 @@ export default function TaskBoard() {
             // 2. 已完成 (DONE): 仅显示 [完成时间] 为 [选中日期] 的任务
             //    这解决了列表堆积的问题
             if (task.status === 'DONE') {
-                console.log(task.completedAt)
 
                 if (!task.completedAt) return false;
-                // console.log(task.completedAt)
                 return isSameDay(task.completedAt, selectedDate);
             }
 
@@ -207,7 +251,9 @@ export default function TaskBoard() {
                                         users={users}
                                         types={types}
                                         onClick={setSelectedTask}
-                                        onMove={moveTask}
+                                        onMove={handleMoveClick}
+                                        onDelete={handleDeleteTask}
+                                        salesPersons={salesPersons}
                                     />
                                 ))}
                             </div>
@@ -226,6 +272,16 @@ export default function TaskBoard() {
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
                 onSuccess={fetchData}
+            />
+
+            <ConfirmModal
+                isOpen={!!movingTask}
+                onClose={() => setMovingTask(null)}
+                onConfirm={handleConfirmMove}
+                title="推进任务"
+                content={`确定要将任务推进到下一个阶段吗？`}
+                isLoading={isMoveLoading}
+                variant="primary"
             />
         </div>
     )
