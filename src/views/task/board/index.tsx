@@ -30,6 +30,9 @@ export default function TaskBoard() {
     const [movingTask, setMovingTask] = useState<Task | null>(null)
     const [isMoveLoading, setIsMoveLoading] = useState(false)
 
+    const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null)
+    const [isDeleteLoading, setIsDeleteLoading] = useState(false)
+
     // --- 新增过滤状态 ---
     const [filterMode, setFilterMode] = useState<FilterMode>('focus'); // 默认 'focus'
     // 默认选中今天 (使用本地时间 YYYY-MM-DD)
@@ -80,6 +83,27 @@ export default function TaskBoard() {
         setMovingTask(task)
     }
     
+    const handleDeleteClick = (id: string) => {
+        setDeletingTaskId(id);
+    }
+
+    // [!code focus] 确认删除逻辑
+    const handleConfirmDelete = async () => {
+        if (!deletingTaskId) return;
+        setIsDeleteLoading(true);
+        try {
+            await deleteTask(deletingTaskId);
+            // 乐观更新，直接从本地移除，减少加载闪烁
+            setTasks(prev => prev.filter(t => t.id !== deletingTaskId));
+            setDeletingTaskId(null); // 关闭弹窗
+        } catch(e) {
+            alert("删除失败");
+            fetchData(); // 失败回滚
+        } finally {
+            setIsDeleteLoading(false);
+        }
+    }
+
     const handleConfirmMove = async () => {
         if (!movingTask) return
         
@@ -252,7 +276,7 @@ export default function TaskBoard() {
                                         types={types}
                                         onClick={setSelectedTask}
                                         onMove={handleMoveClick}
-                                        onDelete={handleDeleteTask}
+                                        onDelete={handleDeleteClick}
                                         salesPersons={salesPersons}
                                     />
                                 ))}
@@ -282,6 +306,16 @@ export default function TaskBoard() {
                 content={`确定要将任务推进到下一个阶段吗？`}
                 isLoading={isMoveLoading}
                 variant="primary"
+            />
+
+            <ConfirmModal
+                isOpen={!!deletingTaskId}
+                onClose={() => setDeletingTaskId(null)}
+                onConfirm={handleConfirmDelete}
+                title="删除任务"
+                content="确定要删除该任务吗？此操作无法撤销。"
+                isLoading={isDeleteLoading}
+                variant="danger"
             />
         </div>
     )
