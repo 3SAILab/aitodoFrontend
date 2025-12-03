@@ -42,7 +42,7 @@ export default function TaskCard({ task, types, users = [], onClick, onMove }: T
                     {overdue && <span className="ml-2 text-xs bg-red-100 text-red-600 px-1 rounded">已逾期</span>}
                 </h4>
                 {assignee && (
-                    <div className="text-xs text-blue-600 ">
+                    <div className="flex justify-between text-xs text-blue-600 ">
                         <span className="opacity-70">负责人:</span>
                         <span className="font-medium">{assignee.username}</span>
                     </div>
