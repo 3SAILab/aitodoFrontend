@@ -58,7 +58,6 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 修改：只校验任务类型，标题不再校验
     if (!formData.typeId) {
         alert('请选择任务类型');
         return;
@@ -66,18 +65,12 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
 
     setLoading(true);
     try {
-      // 处理日期：将 YYYY-MM-DD 转换为 秒级时间戳
-      const submitData = { ...formData };
-      if (dateStr) {
-        submitData.dueDate = Math.floor(new Date(dateStr).getTime() / 1000);
-      } else {
-        submitData.dueDate = 0;
-      }
+      // [!code focus] 移除了日期处理逻辑，dueDate 固定为 0
+      const submitData = { ...formData, dueDate: 0 };
 
       await createTask(submitData);
-      onSuccess(); // 通知父组件刷新列表
-      onClose();   // 关闭弹窗
-      // 重置表单
+      onSuccess();
+      onClose();
       setFormData({
         title: '',
         typeId: taskTypes[0]?.id || '',
@@ -87,7 +80,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
         dueDate: 0,
         assigneeId: ''
       });
-      setDateStr('');
+      // [!code focus] 删除了 setDateStr('');
     } catch (error) {
       alert('创建失败');
     } finally {
@@ -138,13 +131,6 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
               <option key={person.id} value={person.id}>{person.name}</option>
             ))}
           </FormSelect>
-
-          <FormInput
-            type="datetime-local"
-            label="截止日期"
-            value={dateStr}
-            onChange={e => setDateStr(e.target.value)}
-          />
         </div>
 
         {/* 描述 */}

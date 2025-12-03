@@ -1,9 +1,8 @@
 import type { Task, TaskType, User } from "@/types";
-import { formatDate, formatDuration, isTaskOverdue } from "@/utils/date";
+import { formatDate, formatDuration } from "@/utils/date"; // [!code focus] 移除了 isTaskOverdue
 import clsx from "clsx";
 import { Button } from "@/components/Common/Button";
 import { useAuthStore } from "@/store/authStore";
-
 
 interface TaskCardProps {
     task: Task
@@ -14,7 +13,7 @@ interface TaskCardProps {
 }
 
 export default function TaskCard({ task, types, users = [], onClick, onMove }: TaskCardProps) {
-    const overdue = isTaskOverdue(task)
+    // [!code focus] 删除了 const overdue = ... 
     const currentUser = useAuthStore(state => state.user)
     const typeInfo = types.find(t => t.id === task.typeId)
     
@@ -26,19 +25,21 @@ export default function TaskCard({ task, types, users = [], onClick, onMove }: T
     return (
         <div className={clsx(
             "p-4 rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer flex flex-col gap-2",
-            overdue ? "bg-red-50 border-red-200" : "bg-white border-gray-100")}
+            // [!code focus] 移除了 overdue 的判断，固定使用默认样式
+            "bg-white border-gray-100" 
+        )}
             onClick={() => onClick(task)}    
         >
             <div className="flex items-center gap-2">
-                <span className="w-2 -h-2 rounded-full" style={{ backgroundColor: typeInfo?.colorCode || '#9ca3af'  }}></span>
+                <span className="w-2 h-2 rounded-full" style={{ backgroundColor: typeInfo?.colorCode || '#9ca3af'  }}></span>
                 <span className="text-xs text-gray-500">{typeInfo?.name || '未知'}</span>
                 <span className="ml-auto text-xs text-gray-400 font-mono">#{task.priority}</span>
             </div>
 
             <div>
-                <h4 className={clsx("font-medium leading-tight mb-1", overdue ? "text-red-700": "text-gray-900")}>
+                {/* [!code focus] 移除了标题旁边的逾期标签和颜色判断 */}
+                <h4 className="font-medium leading-tight mb-1 text-gray-900">
                     {task.title}
-                    {overdue && <span className="ml-2 text-xs bg-red-100 text-red-600 px-1 rounded">已逾期</span>}
                 </h4>
                 {assignee && (
                     <div className="flex justify-between text-xs text-blue-600 ">
@@ -54,12 +55,9 @@ export default function TaskCard({ task, types, users = [], onClick, onMove }: T
                 <div className="flex justify-between">
                     <span>创建:</span><span>{formatDate(task.createdAt)}</span>
                 </div>
-                {task.dueDate ? (
-                    <div className={clsx("flex justify-between", overdue ? "text-red-600 font-bold" : "text-gray-500")}>
-                        <span>截止:</span><span>{formatDate(task.dueDate)}</span>
-                    </div>
-                )
-                : null}
+                
+                {/* [!code focus] 删除了 task.dueDate 的显示代码块 */}
+
                 <div className="flex justify-between text-blue-400">
                     <span>{task.status === 'DONE' ? '总耗时:' : '已耗时:'}</span>
                     <span className={durationText === '未开始' ? 'text-gray-400' : ''}>{durationText}</span>
@@ -79,9 +77,3 @@ export default function TaskCard({ task, types, users = [], onClick, onMove }: T
         </div>
     )
 }
-
-
-
-
-
-

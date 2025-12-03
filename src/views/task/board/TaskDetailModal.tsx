@@ -71,7 +71,7 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
                 status: task.status,
                 assigneeId: task.assigneeId,
                 salesPersonId: task.salesPersonId,
-                dueDate: task.dueDate,
+                dueDate: 0,
                 priority: task.priority
             });
             
@@ -183,13 +183,6 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
                         )}
                     </div>
 
-                    {/* 底部截止时间提示 */}
-                    {task.dueDate ? (
-                        <div className="mt-4 pt-3 border-t border-gray-100 text-xs text-gray-500 flex justify-between">
-                            <span>截止时间</span>
-                            <span className="font-medium text-gray-700">{formatDate(task.dueDate)}</span>
-                        </div>
-                    ) : null}
                 </div>
 
                 {/* 右侧：进度记录区域 */}
