@@ -58,13 +58,25 @@ export const formatDuration = (createdAt?: number, completedAt?: number, status?
         return '未开始'
     }
 
-    const end = (status === 'DONE' && completedAt) ? completedAt : Math.floor(Date.now() / 1000)
+    // 1. 获取本地时区与 UTC 的时差（分钟，东八区返回 -480）
+    const timezoneOffset = new Date().getTimezoneOffset();
+    // 2. 时差换算成秒数（东八区：-480 分钟 → +28800 秒，即 8 小时）
+    const localTimeOffset = -timezoneOffset * 60;
+    // 3. UTC 时间戳 + 本地时差 = 本地时间对应的时间戳
+    const currentLocalTimestamp = Math.floor(Date.now() / 1000) + localTimeOffset;
+
+    // 最终 end 逻辑（使用本地时间戳）
+    const end = (status === 'DONE' && completedAt) ? completedAt : currentLocalTimestamp;
+    // console.log(`当前时间：${end}`)
+    // console.log(`创建时间：${createdAt}`)
     let diff = end - createdAt
+    // console.log(`相差时间：${diff}`)
     if (diff < 0) diff = 0
     
     const days = Math.floor(diff / 86400)
     const hours = Math.floor((diff % 86400) / 3600)
     const minutes = Math.floor((diff % 3600) / 60)
+    // console.log(`${days}天, ${hours}小时, ${minutes}分钟`)
 
     if (days > 0) return `${days}天${hours}小时${minutes}分`
     if (hours > 0) return `${hours}小时${minutes}分`

@@ -17,8 +17,7 @@ export default function TaskCard({ task, types, users = [], onClick, onMove }: T
     const overdue = isTaskOverdue(task)
     const currentUser = useAuthStore(state => state.user)
     const typeInfo = types.find(t => t.id === task.typeId)
-    const typeColor = typeInfo?.colorCode || '#9ca3af'
-    const typeName = typeInfo?.name || '未知类型'
+    
     const durationText = formatDuration(task.createdAt, task.completedAt, task.status)
 
     const assignee = users.find(u => u.id === task.creatorId)

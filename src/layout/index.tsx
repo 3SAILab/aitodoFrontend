@@ -1,4 +1,4 @@
-import { Outlet, Link, useNavigate } from 'react-router-dom'
+import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'  
 import { LayoutDashboard, Users, LogOut, Briefcase, Tag } from 'lucide-react'
 
@@ -7,17 +7,19 @@ import clsx from 'clsx'
 export default function Layout() {
     const { user, logout } = useAuthStore()
     const navigate = useNavigate()
+    const location = useLocation() // 获取当前路由位置
 
     const handleLogout = () => {
         logout()
         navigate('/login')
     }
 
+    // 统一样式生成函数：根据当前路径判断是否激活
     const linkClass = (path: string) => clsx(
         "flex items-center gap-2 rounded-md px-4 py-2 transition-colors",
         location.pathname === path
-            ? "bg-blue-50 text-blue-600 font-medium"
-            : "text-gray-700 hover:bg-blue-50 hover:text-blue-600"
+            ? "bg-blue-50 text-blue-600 font-medium" // 选中状态：蓝色背景和文字
+            : "text-gray-700 hover:bg-blue-50 hover:text-blue-600" // 默认状态：灰色文字，Hover变蓝
     )
 
     return (
@@ -28,7 +30,8 @@ export default function Layout() {
                     <p className='text-xs text-gray-500 mt-1'>当前用户: {user?.username}</p>
                 </div>
                 <nav className='mt-6 px-4 space-y-2'>
-                    <Link to="/" className='flex items-center gap-2 rounded-md px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600'>
+                    {/* 修复：使用 linkClass 统一处理样式 */}
+                    <Link to="/" className={linkClass("/")}>
                         <LayoutDashboard size={20} />
                         任务看板
                     </Link>
@@ -43,13 +46,14 @@ export default function Layout() {
                     </Link>
 
                     {user?.role === 'admin' && (
-                        <Link to="/admin/users" className='flex items-center gap-2 rounded-md px-4 py-2 text-gray-700 hover:bg-blue-50 hover:text-blue-600'>
+                        /* 修复：使用 linkClass 统一处理样式 */
+                        <Link to="/admin/users" className={linkClass("/admin/users")}>
                             <Users size={20}/>
                             用户管理
                         </Link>
                     )}
 
-                    <button onClick={handleLogout} className='flex w-full items-center gap-2 rounded-md px-4 py-2 text-red-600 hover:bg-red-50 mt-10'>
+                    <button onClick={handleLogout} className='flex w-full items-center gap-2 rounded-md px-4 py-2 text-red-600 hover:bg-red-50 mt-10 transition-colors'>
                         <LogOut size={20}/>
                         退出登录
                     </button>
