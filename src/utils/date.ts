@@ -12,6 +12,32 @@ export const formatDate = (timestamp?: number) => {
     return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
+// 获取 YYYY-MM-DD 格式的日期字符串 (用于 Input type="date" 和 比较)
+export const getDateString = (timestamp: number) => {
+    const date = new Date(timestamp * 1000)
+    const year = date.getUTCFullYear()
+    const month = (date.getUTCMonth() + 1).toString().padStart(2, '0')
+    const day = date.getUTCDate().toString().padStart(2, '0')
+    return `${year}-${month}-${day}`
+}
+
+// 检查是否是同一天 (比较 timestamp 和 YYYY-MM-DD 字符串)
+export const isSameDay = (timestamp: number, dateStr: string) => {
+    if (!timestamp) return false;
+    // 这里要注意时区问题，简单起见我们假设 dateStr 是本地时间，timestamp 是 UTC
+    // 但通常 input type="date" 返回的是 YYYY-MM-DD。
+    // 为了更准确的比较，建议都转为本地显示的 YYYY-MM-DD 字符串比较
+    const targetDate = getDateString(timestamp);
+    return targetDate === dateStr;
+}
+
+// 检查是否在指定日期之前或当天 (用于 Todo)
+export const isBeforeOrSameDay = (timestamp: number, dateStr: string) => {
+    if (!timestamp) return false;
+    const targetDate = getDateString(timestamp);
+    return targetDate <= dateStr;
+}
+
 // 判断任务是否逾期
 export const isTaskOverdue = (task: { status: string; dueDate?: number; completedAt?: number }) => {
     if (!task.dueDate) return false
