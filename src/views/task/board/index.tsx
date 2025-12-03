@@ -31,10 +31,12 @@ export default function TaskBoard() {
     // 默认选中今天 (使用本地时间 YYYY-MM-DD)
     const [selectedDate, setSelectedDate] = useState<string>(() => {
         const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
+        const year = now.getUTCFullYear();
+        const month = String(now.getUTCMonth() + 1).padStart(2, '0');
+        const day = String(now.getUTCDate()).padStart(2, '0');
+        // console.log(`${year}-${month}-${day}`)
         return `${year}-${month}-${day}`;
+
     });
 
     const user = useAuthStore(state => state.user)
@@ -42,14 +44,18 @@ export default function TaskBoard() {
     const fetchData = async () => {
         try {
             const [taskRes, typeRes, usersRes] = await Promise.all([getTasks(), getTaskTypes(), getUsers()])
-            const allTasks = taskRes.list || []
-            
+            const allTasks = (taskRes.list || []).map(task => ({
+                ...task,
+                completedAt: task.complete_at,
+            }))
             if (user?.role === 'admin') {
+                console.log(allTasks)
                 setTasks(allTasks)
             } else {
                 setTasks(allTasks.filter(task => 
                     task.creatorId === user?.id || task.assigneeId === user?.id
                 ))
+                
             }
 
             setUsers(usersRes.list || [])
@@ -70,9 +76,6 @@ export default function TaskBoard() {
         }
         const next = nextMap[task.status]
         if (!next) return
-
-        // 简化的确认体验
-        // if (!confirm(`确定要将任务 "${task.title}" 推进到 "${next.t}" 状态吗？`)) return
 
         try {
             await UpdateTask(task.id, {...task, status: next.s})
@@ -95,7 +98,10 @@ export default function TaskBoard() {
             // 2. 已完成 (DONE): 仅显示 [完成时间] 为 [选中日期] 的任务
             //    这解决了列表堆积的问题
             if (task.status === 'DONE') {
+                console.log(task.completedAt)
+
                 if (!task.completedAt) return false;
+                // console.log(task.completedAt)
                 return isSameDay(task.completedAt, selectedDate);
             }
 

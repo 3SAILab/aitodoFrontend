@@ -24,10 +24,8 @@ export const getDateString = (timestamp: number) => {
 // 检查是否是同一天 (比较 timestamp 和 YYYY-MM-DD 字符串)
 export const isSameDay = (timestamp: number, dateStr: string) => {
     if (!timestamp) return false;
-    // 这里要注意时区问题，简单起见我们假设 dateStr 是本地时间，timestamp 是 UTC
-    // 但通常 input type="date" 返回的是 YYYY-MM-DD。
-    // 为了更准确的比较，建议都转为本地显示的 YYYY-MM-DD 字符串比较
     const targetDate = getDateString(timestamp);
+    
     return targetDate === dateStr;
 }
 
@@ -38,19 +36,6 @@ export const isBeforeOrSameDay = (timestamp: number, dateStr: string) => {
     return targetDate <= dateStr;
 }
 
-// 判断任务是否逾期
-export const isTaskOverdue = (task: { status: string; dueDate?: number; completedAt?: number }) => {
-    if (!task.dueDate) return false
-    
-    // 已完成：比较完成时间与截止时间
-    if (task.status === 'DONE') {
-        return task.completedAt ? task.completedAt > task.dueDate : false
-    }
-
-    // 未完成：比较当前时间与截止时间
-    const now = Math.floor(Date.now() / 1000)
-    return now > task.dueDate
-}
 
 // 计算耗时文本
 export const formatDuration = (createdAt?: number, completedAt?: number, status?: string) => {
