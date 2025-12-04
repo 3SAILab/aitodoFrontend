@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import Modal from '@/components/Common/Modal';
 import { Button } from '@/components/Common/Button';
 import { FormInput } from '@/components/Common/FormInput';
-
+import { toast } from 'react-toastify';
 
 interface Props {
   isOpen: boolean;
@@ -21,12 +21,12 @@ export default function CreateTypeModal({ isOpen, onClose, onSuccess }: Props) {
     setLoading(true);
     try {
       await createTaskType({ name, colorCode });
+      toast.success('任务类型创建成功');
       onSuccess();
       onClose();
-      setName('');
-      setColorCode('#3b82f6');
+      // ...
     } catch (error) {
-      alert('创建失败');
+      toast.error('创建失败');
     } finally {
       setLoading(false);
     }

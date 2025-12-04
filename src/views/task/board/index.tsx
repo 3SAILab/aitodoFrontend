@@ -12,7 +12,7 @@ import { isSameDay, isBeforeOrSameDay } from "@/utils/date";
 import { Calendar, Layers } from "lucide-react";
 import ConfirmModal from "@/components/Common/ConfirmModal"
 import { useConfirm } from "@/hooks/useConfirm"
-
+import { toast } from 'react-toastify';
 
 const COLUMNS = [
     { id: 'TODO', title: '待办事项', color: 'bg-gray-100 border-gray-200' },
@@ -46,7 +46,6 @@ export default function TaskBoard() {
 
     const fetchData = async () => {
         try {
-            
             const [taskRes, typeRes, usersRes, salesRes] = await Promise.all([
                 getTasks(), getTaskTypes(), getUsers(), getSalesPersons()
             ])
@@ -63,7 +62,6 @@ export default function TaskBoard() {
                 ))
                 
             }
-
             setUsers(usersRes.list || [])
             setTypes(typeRes.list || [])
             setSalesPersons(salesRes.list || [])
@@ -86,12 +84,17 @@ export default function TaskBoard() {
             }
             const next = nextMap[task.status]
             if (!next) return
-
-            await UpdateTask(task.id, {...task, status: next.s})
-            setTasks(prev => prev.map(t =>
-                t.id === task.id ? {...t, status: next.s as any,
-                    completedAt: next.s === 'DONE' ? Math.floor(Date.now() / 1000) : t.completedAt} : t
-            ))
+            try {
+                await UpdateTask(task.id, {...task, status: next.s})
+                setTasks(prev => prev.map(t =>
+                    t.id === task.id ? {...t, status: next.s as any,
+                        completedAt: next.s === 'DONE' ? Math.floor(Date.now() / 1000) : t.completedAt} : t
+                ))
+                toast.success(`任务已推进至${next.t}`)
+            } catch (e) {
+                toast.error('任务推进失败');
+            }
+            
         }
     })
 
@@ -100,8 +103,13 @@ export default function TaskBoard() {
         content: "确定要删除该任务吗？此操作无法撤销。",
         variant: 'danger',
         onConfirm: async (id) => {
-            await deleteTask(id)
-            setTasks(prev => prev.filter(t => t.id !== id))
+            try {
+                await deleteTask(id)
+                setTasks(prev => prev.filter(t => t.id !== id))
+                toast.success('任务已删除');
+            } catch (e) {
+                toast.error('删除任务失败');
+            }
         }
     })
 

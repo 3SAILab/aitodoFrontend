@@ -5,6 +5,7 @@ import { Trash2, Phone, User as UserIcon} from "lucide-react";
 import CreateSalesModal from "./CreateSalesModal";
 import { useConfirm } from "@/hooks/useConfirm";
 import ConfirmModal from "@/components/Common/ConfirmModal";
+import { toast } from 'react-toastify';
 
 export default function SaleManagement() {
     const [list, setList] = useState<SalesPerson[]>([])
@@ -21,23 +22,18 @@ export default function SaleManagement() {
 
     useEffect(() => { fetchData() }, [])
 
-    const handleDelete = async (id: string) => {
-        if (!confirm('确定要删除该销售吗?')) return
-        try {
-            await deleteSalesPerson(id)
-            fetchData()
-        } catch (e) {
-            alert('删除失败');
-        }
-    }
-
     const deleteConfirm = useConfirm<string>({
         title: "删除销售人员",
         content: "确定要删除该销售人员吗？", // 这里比较简单，直接用字符串即可
         variant: "danger",
         onConfirm: async (id) => {
-            await deleteSalesPerson(id)
-            fetchData()
+            try {
+                await deleteSalesPerson(id)
+                fetchData()
+                toast.success('销售人员已删除');
+            } catch (error) {
+                toast.error('删除失败，可能有关联任务');
+            }
         }
     })
 

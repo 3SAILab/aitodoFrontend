@@ -3,6 +3,7 @@ import { createUser } from "@/api/auth";
 import Modal from "@/components/Common/Modal";
 import { FormInput } from "@/components/Common/FormInput";
 import { Button } from "@/components/Common/Button";
+import { toast } from 'react-toastify';
 
 interface Props {
     isOpen: boolean
@@ -20,11 +21,12 @@ export default function CreateUserModal({ isOpen, onClose, onSuccess }: Props) {
 
         try {
             await createUser(formData)
+            toast.success('用户创建成功');
             onSuccess()
             onClose()
             setFormData({ username: '', email: '', password: '' })
         } catch (error) {
-            alert('创建用户失败，可能是权限不足或邮箱已存在');
+            toast.error('创建用户失败，可能是邮箱已存在');
         } finally {
             setLoading(false);
         }

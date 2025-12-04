@@ -8,6 +8,7 @@ import Modal from "@/components/Common/Modal";
 import { Button } from "@/components/Common/Button";
 import { FormTextArea } from "@/components/Common/FormTextarea";
 import clsx from "clsx";
+import { toast } from 'react-toastify'; 
 
 interface Props {
     task: Task | null
@@ -52,8 +53,9 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
             setNewLogContent('')
             const res = await getTaskProgress(task.id)
             setLogs(res.list || [])
+            toast.success('进度记录已添加')
         } catch (error) {
-            alert("记录失败")
+            toast.error('记录添加失败')
         } finally {
             setLoadingLog(false)
         }
@@ -80,8 +82,9 @@ export default function TaskDetailModal({ task, isOpen, onClose, onUpdate }: Pro
             setIsEditing(false);
             
             onUpdate(); // 后台静默刷新父组件列表
+            toast.success('任务描述已更新')
         } catch(e) {
-            alert('保存失败');
+            toast.error('保存失败');
         } finally {
             setSavingTask(false);
         }

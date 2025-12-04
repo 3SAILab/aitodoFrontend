@@ -3,6 +3,7 @@ import { getTaskTypes, deleteTaskType } from '@/api/task';
 import type { TaskType } from '@/types';
 import { Trash2, Tag } from 'lucide-react';
 import CreateTypeModal from './CreateTypeModal';
+import { toast } from 'react-toastify';
 
 export default function TypeManagement() {
   const [list, setList] = useState<TaskType[]>([]);
@@ -22,8 +23,9 @@ export default function TypeManagement() {
     try {
       await deleteTaskType(id);
       fetchData();
+      toast.success('任务类型已删除');
     } catch (e) {
-      alert('删除失败，可能该类型下仍有任务');
+      toast.error('删除失败，请确保该类型下无任务');
     }
   };
 

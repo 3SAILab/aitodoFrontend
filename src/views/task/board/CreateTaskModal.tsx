@@ -5,6 +5,7 @@ import Modal from '@/components/Common/Modal';
 import { FormTextArea } from '@/components/Common/FormTextarea';
 import { FormSelect } from '@/components/Common/FormSelect';
 import { Button } from '@/components/Common/Button';
+import { toast } from 'react-toastify'; 
 
 interface CreateTaskModalProps {
   isOpen: boolean;
@@ -48,7 +49,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
             setFormData(prev => ({ ...prev, typeId: typesRes.list[0].id }));
           }
         } catch (error) {
-          console.error("加载选项失败", error);
+          toast.error(`加载选项失败: ${error}`);
         }
       };
       loadOptions();
@@ -58,7 +59,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!formData.typeId) {
-        alert('请选择任务类型');
+        toast.warning('请选择任务类型');
         return;
       }
 
@@ -68,6 +69,7 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
       const submitData = { ...formData, dueDate: 0 };
 
       await createTask(submitData);
+      toast.success('任务创建成功')
       onSuccess();
       onClose();
       setFormData({
@@ -79,9 +81,8 @@ export default function CreateTaskModal({ isOpen, onClose, onSuccess }: CreateTa
         dueDate: 0,
         assigneeId: ''
       });
-      // [!code focus] 删除了 setDateStr('');
     } catch (error) {
-      alert('创建失败');
+      toast.error('创建任务失败');
     } finally {
       setLoading(false);
     }

@@ -9,6 +9,7 @@ import { useAuthStore } from '@/store/authStore';
 import { useManageList } from '@/hooks/useManageList';
 import { useConfirm } from '@/hooks/useConfirm';
 import ConfirmModal from '@/components/Common/ConfirmModal';
+import { toast } from 'react-toastify'
 
 export default function UserManagement() {
   const currentUser = useAuthStore(state => state.user);
@@ -20,14 +21,19 @@ export default function UserManagement() {
     content: (user) => `确定要删除用户 "${user.username}" 吗？此操作无法撤销。`,
     variant: 'danger',
     onConfirm: async (user) => {
-      await deleteUser(user.id)
-      setList(prev => prev.filter(item => item.id !== user.id))
+      try {
+        await deleteUser(user.id)
+        setList(prev => prev.filter(item => item.id !== user.id))
+        toast.success('用户已删除');
+    } catch (error) {
+        toast.error('删除用户失败');
+    }
     }
   })
 
   const handleDeleteClick = (user: User) => {
     if (user.id === currentUser?.id) {
-      alert("无法删除当前登录账号！");
+      toast.error("无法删除当前登录账号！");
       return 
     } 
     deleteConfirm.confirm(user)

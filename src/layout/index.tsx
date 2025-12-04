@@ -1,8 +1,10 @@
 import { Outlet, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '@/store/authStore'  
 import { LayoutDashboard, Users, LogOut, Briefcase, Tag } from 'lucide-react'
-
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import clsx from 'clsx'
+import { toast } from 'react-toastify'; 
 
 export default function Layout() {
     const { user, logout } = useAuthStore()
@@ -24,6 +26,19 @@ export default function Layout() {
 
     return (
         <div className='flex h-screen bg-gray-50'>
+            {/* <ToastContainer /> */}
+            <ToastContainer 
+                position="top-center"
+                autoClose={2000}
+                hideProgressBar={true}
+                newestOnTop={false}
+                closeOnClick
+                rtl={false}
+                pauseOnFocusLoss
+                draggable
+                pauseOnHover
+                theme="light"
+            />
             <aside className='w-64 bg-white shadow-md'>
                 <div className='p-6'>
                     <h1 className='text-xl font-bold text-blue-600'>Todo 系统</h1>

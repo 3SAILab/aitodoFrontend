@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { createSalesPerson } from "@/api/task";
 import Modal from '@/components/Common/Modal';
 import { FormInput } from "@/components/Common/FormInput";
+import { toast } from 'react-toastify'; 
 
 interface Props {
     isOpen: boolean
@@ -19,12 +20,13 @@ export default function CreateSalesModal({ isOpen, onClose, onSuccess }: Props) 
         setLoading(true)
         try {
             await createSalesPerson( { name, phone })
+            toast.success('销售人员添加成功');
             onSuccess()
             onClose()
             setName('')
             setPhone('')
         } catch (error) {
-            alert('创建失败');
+            toast.error('添加失败');
         } finally {
             setLoading(false);
         }
