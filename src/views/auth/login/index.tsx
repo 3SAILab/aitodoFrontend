@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { login } from '@/api/auth';
 import { useAuthStore } from '@/store/authStore';
+import { toast } from 'react-toastify';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -20,9 +21,10 @@ export default function LoginPage() {
         email: email, 
         role: res.role 
       });
+      toast.success('登录成功，欢迎回来！')
       navigate('/');
     } catch (err) {
-      alert('登录失败，请检查账号密码');
+      toast.error('登录失败，请检查账号密码');
     }
   };
 

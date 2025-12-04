@@ -9,10 +9,11 @@ import TaskCard from "./TaskCard"
 import { Button } from "@/components/Common/Button"
 import { getUsers } from "@/api/auth";
 import { isSameDay, isBeforeOrSameDay } from "@/utils/date";
-import { Calendar, Layers } from "lucide-react";
+import { Calendar, Layers, Filter } from "lucide-react";
 import ConfirmModal from "@/components/Common/ConfirmModal"
 import { useConfirm } from "@/hooks/useConfirm"
 import { toast } from 'react-toastify';
+
 
 const COLUMNS = [
     { id: 'TODO', title: '待办事项', color: 'bg-gray-100 border-gray-200' },
@@ -41,6 +42,8 @@ export default function TaskBoard() {
         return `${year}-${month}-${day}`;
 
     });
+
+    const [adminFilterUserId, setAdminFilterUserId] = useState<string>('ALL');
 
     const user = useAuthStore(state => state.user)
 
@@ -115,36 +118,41 @@ export default function TaskBoard() {
 
     // --- 核心过滤逻辑 ---
     const filteredTasks = useMemo(() => {
-        if (filterMode === 'all') return tasks;
 
-        return tasks.filter(task => {
-            // 1. 进行中 (DOING): 永远显示，因为这是当前正在做的事，不受日期限制
+        let baseTasks = tasks;
+        if (user?.role === 'admin' && adminFilterUserId !== 'ALL') {
+            baseTasks = tasks.filter(t => t.creatorId === adminFilterUserId || t.assigneeId === adminFilterUserId);
+        }
+        if (filterMode === 'all') return baseTasks;
+
+        return baseTasks.filter(task => { // 使用 baseTasks 代替 tasks
+            // 1. 进行中 (DOING): 永远显示
             if (task.status === 'DOING') return true;
 
             // 2. 已完成 (DONE): 仅显示 [完成时间] 为 [选中日期] 的任务
-            //    这解决了列表堆积的问题
             if (task.status === 'DONE') {
-
                 if (!task.completedAt) return false;
                 return isSameDay(task.completedAt, selectedDate);
             }
 
-            // 3. 待办 (TODO): 显示 [截止日期 <= 选中日期] (包含逾期和当天的) 或 [无截止日期] (Backlog)
+            // 3. 待办 (TODO): 显示 [截止日期 <= 选中日期] (包含逾期和当天的) 或 [无截止日期]
             if (task.status === 'TODO') {
-                // 如果没有截止日期，视为 Backlog，在聚焦视图中显示 (或者你可以选择隐藏)
                 if (!task.dueDate) return true; 
-                // 如果有截止日期，显示今天及之前的（逾期任务不能丢）
                 return isBeforeOrSameDay(task.dueDate, selectedDate);
             }
 
             return true;
         });
-    }, [tasks, filterMode, selectedDate]);
+    }, [tasks, filterMode, selectedDate, adminFilterUserId, user]);
 
     // 计算今日完成数，给用户正反馈
     const doneTodayCount = useMemo(() => {
-        return tasks.filter(t => t.status === 'DONE' && t.completedAt && isSameDay(t.completedAt, selectedDate)).length;
-    }, [tasks, selectedDate]);
+        let baseTasks = tasks;
+        if (user?.role === 'admin' && adminFilterUserId !== 'ALL') {
+            baseTasks = tasks.filter(t => t.creatorId === adminFilterUserId || t.assigneeId === adminFilterUserId);
+        }
+        return baseTasks.filter(t => t.status === 'DONE' && t.completedAt && isSameDay(t.completedAt, selectedDate)).length;
+    }, [tasks, selectedDate, adminFilterUserId, user]);
     
     return (
         <div className="h-full flex flex-col">
@@ -180,7 +188,23 @@ export default function TaskBoard() {
                             <Layers size={16} />
                             所有历史
                         </button>
-                    </div>                    
+                    </div>         
+                    {/* [!code ++] 管理员用户筛选下拉框 */}
+                    {user?.role === 'admin' && (
+                        <div className="flex items-center gap-2 ml-2">
+                            <span className="text-sm text-gray-400 hidden lg:inline"><Filter size={14}/></span>
+                            <select
+                                value={adminFilterUserId}
+                                onChange={(e) => setAdminFilterUserId(e.target.value)}
+                                className="text-sm border border-gray-200 rounded-md px-2 py-1.5 outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 bg-white"
+                            >
+                                <option value="ALL">全部用户</option>
+                                {users.map(u => (
+                                    <option key={u.id} value={u.id}>{u.username}</option>
+                                ))}
+                            </select>
+                        </div>
+                    )}       
                 </div>
 
                 <div className="flex items-center gap-4">

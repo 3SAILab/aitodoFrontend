@@ -13,6 +13,7 @@ export default function Layout() {
 
     const handleLogout = () => {
         logout()
+        toast.success('已安全退出');
         navigate('/login')
     }
 
@@ -26,7 +27,6 @@ export default function Layout() {
 
     return (
         <div className='flex h-screen bg-gray-50'>
-            {/* <ToastContainer /> */}
             <ToastContainer 
                 position="top-center"
                 autoClose={2000}

@@ -26,17 +26,31 @@ export default function TaskCard({ task, types, users = [], salesPersons = [], o
     const assignee = users.find(u => u.id === task.creatorId)
     const isCreator = currentUser?.id === task.creatorId
 
+    const priorityStyles = {
+        0: "border-gray-200 bg-white hover:border-blue-300",         // 普通
+        1: "border-orange-200 bg-orange-50/20 hover:border-orange-300", // 重要
+        2: "border-red-200 bg-red-50/20 hover:border-red-300"           // 紧急
+    }[task.priority] || "border-gray-200 bg-white";
+
+    const priorityTextClass = {
+        0: "text-gray-400",
+        1: "text-orange-500 font-medium",
+        2: "text-red-500 font-bold"
+    }[task.priority] || "text-gray-400";
+
     return (
         <div className={clsx(
             "p-4 rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer flex flex-col gap-2",
-            "bg-white border-gray-100" 
+            "bg-white border-gray-100", priorityStyles 
         )}
             onClick={() => onClick(task)}    
         >
             <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: typeInfo?.colorCode || '#9ca3af'  }}></span>
                 <span className="text-xs text-gray-500">{typeInfo?.name || '未知'}</span>
-                <span className="ml-auto text-xs text-gray-400 font-mono">#{task.priority}</span>
+                <span className={clsx("ml-auto text-xs font-mono", priorityTextClass)}>
+                    {task.priority === 2 ? '!!! 紧急' : task.priority === 1 ? '! 重要' : '# 普通'}
+                </span>
             </div>
 
             <div>
