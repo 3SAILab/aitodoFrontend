@@ -7,25 +7,31 @@ import { Button } from '@/components/Common/Button'; // 引入组件
 import clsx from 'clsx';
 import { useAuthStore } from '@/store/authStore';
 import { useManageList } from '@/hooks/useManageList';
+import { useConfirm } from '@/hooks/useConfirm';
+import ConfirmModal from '@/components/Common/ConfirmModal';
 
 export default function UserManagement() {
   const currentUser = useAuthStore(state => state.user);
   const { list, setList, loading, refresh } = useManageList<User>(getUsers);
   const [isModalOpen, setIsModalOpen] = React.useState(false);
 
-  const handleDelete = async (user: User) => {
+  const deleteConfirm = useConfirm<User>({
+    title: "删除用户",
+    content: (user) => `确定要删除用户 "${user.username}" 吗？此操作无法撤销。`,
+    variant: 'danger',
+    onConfirm: async (user) => {
+      await deleteUser(user.id)
+      setList(prev => prev.filter(item => item.id !== user.id))
+    }
+  })
+
+  const handleDeleteClick = (user: User) => {
     if (user.id === currentUser?.id) {
       alert("无法删除当前登录账号！");
-      return;
-    }
-    if (!confirm(`确定要删除用户 "${user.username}" 吗？此操作无法撤销。`)) return;
-    try {
-      await deleteUser(user.id);
-      setList(prev => prev.filter(item => item.id !== user.id));
-    } catch (e) {
-      alert('删除失败');
-    }
-  };
+      return 
+    } 
+    deleteConfirm.confirm(user)
+  }
 
   return (
     <div className="p-6 h-full flex flex-col">
@@ -85,7 +91,7 @@ export default function UserManagement() {
                     <Button 
                         variant="danger" // 使用 danger 样式
                         className="px-2 py-1 h-auto" // 调整尺寸
-                        onClick={() => handleDelete(user)} 
+                        onClick={() => handleDeleteClick(user)} 
                         title="删除"
                     >
                       <Trash2 size={16} />
@@ -98,6 +104,9 @@ export default function UserManagement() {
         </div>
       </div>
       <CreateUserModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={refresh} />
+      <ConfirmModal
+        {...deleteConfirm.modalProps}
+      />
     </div>
   );
 }

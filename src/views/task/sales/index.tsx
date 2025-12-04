@@ -3,6 +3,8 @@ import { getSalesPersons, deleteSalesPerson } from "@/api/task";
 import type { SalesPerson } from "@/types";
 import { Trash2, Phone, User as UserIcon} from "lucide-react";
 import CreateSalesModal from "./CreateSalesModal";
+import { useConfirm } from "@/hooks/useConfirm";
+import ConfirmModal from "@/components/Common/ConfirmModal";
 
 export default function SaleManagement() {
     const [list, setList] = useState<SalesPerson[]>([])
@@ -29,6 +31,16 @@ export default function SaleManagement() {
         }
     }
 
+    const deleteConfirm = useConfirm<string>({
+        title: "删除销售人员",
+        content: "确定要删除该销售人员吗？", // 这里比较简单，直接用字符串即可
+        variant: "danger",
+        onConfirm: async (id) => {
+            await deleteSalesPerson(id)
+            fetchData()
+        }
+    })
+
     return (
         <div className="p-6">
             <div className="flex justify-between  items-center mb-6">
@@ -54,7 +66,7 @@ export default function SaleManagement() {
                             </div>
                         </div>
                         <button 
-                            onClick={() => handleDelete(item.id)}
+                            onClick={() => deleteConfirm.confirm(item.id)}
                             className="text-red-500 hover:bg-red-50 p-2 rounded-full transition"
                         >
                             <Trash2 size={18}></Trash2>
@@ -64,6 +76,7 @@ export default function SaleManagement() {
                 {list.length === 0 && <p className="text-gray-400 col-span-full text-center py-10">暂无数据</p>}
             </div>
             <CreateSalesModal isOpen={isModalOpen} onClose={() => setIsModalOpen(false)} onSuccess={fetchData} />
+            <ConfirmModal {...deleteConfirm.modalProps}/>
         </div>
     )
 

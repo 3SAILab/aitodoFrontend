@@ -72,7 +72,6 @@ export default function TaskCard({ task, types, users = [], salesPersons = [], o
             {/* [!code focus] 修改底部布局为 flex justify-between 以便分别放置删除和推进按钮 */}
             <div className="mt-1 pt-1 flex justify-between items-center">
                 {/* [!code focus] 只有创建者显示删除按钮 */}
-                {console.log(`Creator: ${isCreator}`)}
                 {isCreator ? (
                     <button 
                         className="text-gray-400 hover:text-red-500 hover:bg-red-50 p-1.5 rounded-md transition-colors"

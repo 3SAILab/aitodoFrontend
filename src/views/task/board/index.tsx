@@ -11,6 +11,8 @@ import { getUsers } from "@/api/auth";
 import { isSameDay, isBeforeOrSameDay } from "@/utils/date";
 import { Calendar, Layers } from "lucide-react";
 import ConfirmModal from "@/components/Common/ConfirmModal"
+import { useConfirm } from "@/hooks/useConfirm"
+
 
 const COLUMNS = [
     { id: 'TODO', title: '待办事项', color: 'bg-gray-100 border-gray-200' },
@@ -27,11 +29,6 @@ export default function TaskBoard() {
     const [selectedTask, setSelectedTask] = useState<Task | null>(null)
     const [users, setUsers] = useState<User[]>([])
     const [salesPersons, setSalesPersons] = useState<SalesPerson[]>([])
-    const [movingTask, setMovingTask] = useState<Task | null>(null)
-    const [isMoveLoading, setIsMoveLoading] = useState(false)
-
-    const [deletingTaskId, setDeletingTaskId] = useState<string | null>(null)
-    const [isDeleteLoading, setIsDeleteLoading] = useState(false)
 
     // --- 新增过滤状态 ---
     const [filterMode, setFilterMode] = useState<FilterMode>('focus'); // 默认 'focus'
@@ -79,83 +76,34 @@ export default function TaskBoard() {
         fetchData()
     }, [])
 
-    const handleMoveClick = (task: Task) => {
-        setMovingTask(task)
-    }
-    
-    const handleDeleteClick = (id: string) => {
-        setDeletingTaskId(id);
-    }
+    const moveConfirm = useConfirm<Task>({
+        title: "推进任务",
+        content: "确定要将任务推进到下一个阶段吗？",
+        onConfirm: async (task) => {
+            const nextMap: Record<string, {s: string, t:string}> = {
+                'TODO': { s: 'DOING', t: '进行中'},
+                'DOING': { s: 'DONE', t: '已完成' }
+            }
+            const next = nextMap[task.status]
+            if (!next) return
 
-    // [!code focus] 确认删除逻辑
-    const handleConfirmDelete = async () => {
-        if (!deletingTaskId) return;
-        setIsDeleteLoading(true);
-        try {
-            await deleteTask(deletingTaskId);
-            // 乐观更新，直接从本地移除，减少加载闪烁
-            setTasks(prev => prev.filter(t => t.id !== deletingTaskId));
-            setDeletingTaskId(null); // 关闭弹窗
-        } catch(e) {
-            alert("删除失败");
-            fetchData(); // 失败回滚
-        } finally {
-            setIsDeleteLoading(false);
-        }
-    }
-
-    const handleConfirmMove = async () => {
-        if (!movingTask) return
-        
-        const nextMap: Record<string, {s: string, t: string}> = {
-            'TODO': { s: 'DOING', t: '进行中'},
-            'DOING': { s: 'DONE', t: '已完成'},
-        }
-        const next = nextMap[movingTask.status]
-        if (!next) return
-
-        setIsMoveLoading(true)
-        try {
-            await UpdateTask(movingTask.id, {...movingTask, status: next.s})
-            setTasks(prev => prev.map(t => t.id === movingTask.id ? {...t, status: next.s as any, completedAt: next.s === 'DONE' ? Math.floor(Date.now() / 1000) : t.completedAt } : t))
-            setMovingTask(null) // 关闭弹窗
-        } catch(e) {
-            alert("更新失败");
-            fetchData();
-        } finally {
-            setIsMoveLoading(false)
-        }
-    }
-
-    const moveTask = async (task: Task) => {
-        const nextMap: Record<string, {s: string, t: string}> = {
-            'TODO': { s: 'DOING', t: '进行中'},
-            'DOING': { s: 'DONE', t: '已完成'},
-        }
-        const next = nextMap[task.status]
-        if (!next) return
-
-        try {
             await UpdateTask(task.id, {...task, status: next.s})
-            // 乐观更新，提升体验
-            setTasks(prev => prev.map(t => t.id === task.id ? {...t, status: next.s as any, completedAt: next.s === 'DONE' ? Math.floor(Date.now() / 1000) : t.completedAt } : t))
-        } catch(e) {
-            alert("更新失败");
-            fetchData(); // 失败回滚
+            setTasks(prev => prev.map(t =>
+                t.id === task.id ? {...t, status: next.s as any,
+                    completedAt: next.s === 'DONE' ? Math.floor(Date.now() / 1000) : t.completedAt} : t
+            ))
         }
-    }
+    })
 
-    const handleDeleteTask = async (id: string) => {
-        if (!confirm('确定要删除该任务吗？此操作无法撤销。')) return;
-        try {
-            await deleteTask(id);
-            // 乐观更新，直接从本地移除，减少加载闪烁
-            setTasks(prev => prev.filter(t => t.id !== id));
-        } catch(e) {
-            alert("删除失败");
-            fetchData(); // 失败回滚
+    const deleteConfirm = useConfirm<string>({
+        title: "删除任务",
+        content: "确定要删除该任务吗？此操作无法撤销。",
+        variant: 'danger',
+        onConfirm: async (id) => {
+            await deleteTask(id)
+            setTasks(prev => prev.filter(t => t.id !== id))
         }
-    }
+    })
 
     // --- 核心过滤逻辑 ---
     const filteredTasks = useMemo(() => {
@@ -275,8 +223,8 @@ export default function TaskBoard() {
                                         users={users}
                                         types={types}
                                         onClick={setSelectedTask}
-                                        onMove={handleMoveClick}
-                                        onDelete={handleDeleteClick}
+                                        onMove={() => moveConfirm.confirm(task)}
+                                        onDelete={() => deleteConfirm.confirm(task.id)}
                                         salesPersons={salesPersons}
                                     />
                                 ))}
@@ -299,23 +247,11 @@ export default function TaskBoard() {
             />
 
             <ConfirmModal
-                isOpen={!!movingTask}
-                onClose={() => setMovingTask(null)}
-                onConfirm={handleConfirmMove}
-                title="推进任务"
-                content={`确定要将任务推进到下一个阶段吗？`}
-                isLoading={isMoveLoading}
-                variant="primary"
+                {...moveConfirm.modalProps}
             />
 
             <ConfirmModal
-                isOpen={!!deletingTaskId}
-                onClose={() => setDeletingTaskId(null)}
-                onConfirm={handleConfirmDelete}
-                title="删除任务"
-                content="确定要删除该任务吗？此操作无法撤销。"
-                isLoading={isDeleteLoading}
-                variant="danger"
+                {...deleteConfirm.modalProps}
             />
         </div>
     )
