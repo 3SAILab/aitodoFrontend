@@ -5,3 +5,25 @@
   --color-primary: #3b82f6;
   --color-secondary: #64748b;
 }
+
+/* [!code focus] 新增：高亮闪烁动画，用于任务移动后的视觉反馈 */
+@keyframes highlight-fade {
+  0% {
+    background-color: #fef08a; /* yellow-200 */
+    box-shadow: 0 0 0 4px rgba(254, 240, 138, 0.5);
+    transform: scale(1.02);
+  }
+  50% {
+    background-color: #fef9c3; /* yellow-100 */
+    transform: scale(1.01);
+  }
+  100% {
+    background-color: white;
+    transform: scale(1);
+    box-shadow: none;
+  }
+}
+
+.animate-highlight {
+  animation: highlight-fade 1.5s ease-out forwards;
+}

@@ -1,5 +1,5 @@
 import { useEffect, useState, useMemo } from "react"
-import { getTasks, UpdateTask, getTaskTypes, deleteTask, getSalesPersons } from "@/api/task"
+import { getTasks, UpdateTask, getTaskTypes, deleteTask, createTaskProgress, getSalesPersons, getTaskProgress } from "@/api/task"
 import type { Task, TaskType, User, SalesPerson } from "@/types"
 import CreateTaskModal from "./CreateTaskModal"
 import { useAuthStore } from '@/store/authStore'
@@ -8,8 +8,8 @@ import TaskDetailModal from "./TaskDetailModal"
 import TaskCard from "./TaskCard"
 import { Button } from "@/components/Common/Button"
 import { getUsers } from "@/api/auth";
-import { isSameDay, isBeforeOrSameDay } from "@/utils/date";
-import { Calendar, Layers, Filter } from "lucide-react";
+import { isSameDay, isBeforeOrSameDay, getTaskDuration } from "@/utils/date";
+import { Calendar, Layers, Filter, ArrowDownWideNarrow, ArrowUpWideNarrow, Clock } from "lucide-react";
 import ConfirmModal from "@/components/Common/ConfirmModal"
 import { useConfirm } from "@/hooks/useConfirm"
 import { toast } from 'react-toastify';
@@ -23,6 +23,8 @@ const COLUMNS = [
 
 type FilterMode = 'focus' | 'all';
 
+type SortType = 'duration-asc' | 'duration-desc' | null;
+
 export default function TaskBoard() {
     const [tasks, setTasks] = useState<Task[]>([])
     const [types, setTypes] = useState<TaskType[]>([])
@@ -31,6 +33,7 @@ export default function TaskBoard() {
     const [users, setUsers] = useState<User[]>([])
     const [salesPersons, setSalesPersons] = useState<SalesPerson[]>([])
 
+    const [sortType, setSortType] = useState<SortType>(null)
     // --- 新增过滤状态 ---
     const [filterMode, setFilterMode] = useState<FilterMode>('focus'); // 默认 'focus'
     // 默认选中今天 (使用本地时间 YYYY-MM-DD)
@@ -43,6 +46,7 @@ export default function TaskBoard() {
 
     });
 
+    const [movingTaskId, setMovingTaskId] = useState<string | null>(null);
     const [adminFilterUserId, setAdminFilterUserId] = useState<string>('ALL');
 
     const user = useAuthStore(state => state.user)
@@ -55,6 +59,15 @@ export default function TaskBoard() {
             const allTasks = (taskRes.list || []).map(task => ({
                 ...task,
                 completedAt: task.complete_at,
+            }))
+            
+            const tasksWithProgress = await Promise.all(allTasks.map(async (t) => {
+                try {
+                    const progressRes = await getTaskProgress(t.id);
+                    return { ...t, progressCount: progressRes.list?.length || 0 };
+                } catch (e) {
+                    return { ...t, progressCount: 0 };
+                }
             }))
 
             if (user?.role === 'admin') {
@@ -87,13 +100,30 @@ export default function TaskBoard() {
             }
             const next = nextMap[task.status]
             if (!next) return
+            setMovingTaskId(task.id)
             try {
+                // 1. 更新任务状态
                 await UpdateTask(task.id, {...task, status: next.s})
-                setTasks(prev => prev.map(t =>
-                    t.id === task.id ? {...t, status: next.s as any,
-                        completedAt: next.s === 'DONE' ? Math.floor(Date.now() / 1000) : t.completedAt} : t
-                ))
+                
+                // 2. [!code focus] 添加推进记录（添加详情的标志记录）
+                await createTaskProgress(task.id, `任务推进至「${next.t}」`);
+
+                setTasks(prev => {
+                   // 3. [!code focus] 将被推进的任务移动到数组最前面，使其在 DOING 列表中置顶
+                   const updatedTask = {
+                        ...task, 
+                        status: next.s as any,
+                        completedAt: next.s === 'DONE' ? Math.floor(Date.now() / 1000) : task.completedAt,
+                        progressCount: (task.progressCount || 0) + 1
+                   };
+                   const others = prev.filter(t => t.id !== task.id);
+                   return [updatedTask, ...others];
+                })
                 toast.success(`任务已推进至${next.t}`)
+
+                setTimeout(() => {
+                    setMovingTaskId(null);
+                }, 1500);
             } catch (e) {
                 toast.error('任务推进失败');
             }
@@ -154,6 +184,14 @@ export default function TaskBoard() {
         return baseTasks.filter(t => t.status === 'DONE' && t.completedAt && isSameDay(t.completedAt, selectedDate)).length;
     }, [tasks, selectedDate, adminFilterUserId, user]);
     
+    const toggleSort = () => {
+        setSortType(current => {
+            if (current === null) return 'duration-asc';
+            if (current === 'duration-asc') return 'duration-desc';
+            return null;
+        });
+    };
+
     return (
         <div className="h-full flex flex-col">
             {/* 顶部工具栏 */}
@@ -188,7 +226,22 @@ export default function TaskBoard() {
                             <Layers size={16} />
                             所有历史
                         </button>
-                    </div>         
+                    </div>    
+
+                    <button 
+                        onClick={toggleSort}
+                        className={clsx(
+                            "flex items-center gap-1 px-3 py-1.5 text-sm font-medium rounded-md transition-all border",
+                            sortType ? "bg-blue-50 text-blue-600 border-blue-200" : "bg-white text-gray-600 border-gray-200 hover:bg-gray-50"
+                        )}
+                        title="按耗时排序"
+                    >
+                        <Clock size={14} />
+                        {sortType === 'duration-asc' ? '耗时最短' : sortType === 'duration-desc' ? '耗时最长' : '默认排序'}
+                        {sortType === 'duration-asc' && <ArrowUpWideNarrow size={14}/>}
+                        {sortType === 'duration-desc' && <ArrowDownWideNarrow size={14}/>}
+                    </button>
+
                     {/* [!code ++] 管理员用户筛选下拉框 */}
                     {user?.role === 'admin' && (
                         <div className="flex items-center gap-2 ml-2">
@@ -226,6 +279,23 @@ export default function TaskBoard() {
                     // 过滤出当前列的任务
                     const colTasks = filteredTasks.filter(t => t.status === col.id);
                     
+                    if (sortType) {
+                        colTasks.sort((a, b) => {
+                            const durationA = getTaskDuration(a);
+                            const durationB = getTaskDuration(b);
+                            return sortType === 'duration-asc' ? durationA - durationB : durationB - durationA;
+                        });
+                    } 
+                    // 2. 默认排序逻辑
+                    else {
+                        if (col.id === 'DONE') {
+                            // [!code focus] 已完成的：最新完成的放在最上面 (按 completedAt 降序)
+                            colTasks.sort((a, b) => (b.completedAt || 0) - (a.completedAt || 0));
+                        }
+                        // 3. DOING 列默认遵循数组顺序（被推进的任务被置顶到数组前面了）
+                        // 4. TODO 列保持默认（通常是按创建时间或 ID）
+                    }
+
                     return (
                         <div key={col.id} className={clsx("flex flex-col rounded-xl border p-4 h-full bg-gray-50/50", col.color)}>
                             <div className="flex items-center justify-between mb-4 sticky top-0 bg-inherit z-10 pb-2 border-b border-gray-200/50">
@@ -258,6 +328,7 @@ export default function TaskBoard() {
                                         onMove={() => moveConfirm.confirm(task)}
                                         onDelete={() => deleteConfirm.confirm(task.id)}
                                         salesPersons={salesPersons}
+                                        isJustMoved={task.id === movingTaskId}
                                     />
                                 ))}
                             </div>

@@ -18,6 +18,7 @@ export interface Task {
   dueDate:       number; // 时间戳 (秒)
   createdAt:     number; // 时间戳 (秒)
   completedAt:   number;
+  progressCount?: number;
 }
 
 // 对应后端 CreateTaskReq

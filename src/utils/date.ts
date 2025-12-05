@@ -67,3 +67,13 @@ export const formatDuration = (createdAt?: number, completedAt?: number, status?
     if (hours > 0) return `${hours}小时${minutes}分`
     return `${minutes}分钟`
 }
+
+export const getTaskDuration = (task: any) => {
+    if (!task.createdAt) return 0;
+    const timezoneOffset = new Date().getTimezoneOffset();
+    const localTimeOffset = -timezoneOffset * 60;
+    const currentLocalTimestamp = Math.floor(Date.now() / 1000) + localTimeOffset;
+
+    const end = (task.status === 'DONE' && task.completedAt) ? task.completedAt : currentLocalTimestamp;
+    return Math.max(0, end - task.createdAt);
+}

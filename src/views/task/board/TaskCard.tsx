@@ -4,7 +4,7 @@ import clsx from "clsx";
 import { Button } from "@/components/Common/Button";
 import { useAuthStore } from "@/store/authStore";
 // [!code focus] 引入 Trash2 图标
-import { Trash2 } from "lucide-react";
+import { Trash2, MessageSquare } from "lucide-react";
 
 interface TaskCardProps {
     task: Task
@@ -14,10 +14,11 @@ interface TaskCardProps {
     onMove: (task: Task) => void
     // [!code focus] 新增 onDelete 回调定义
     onDelete: (id: string) => void
-    salesPersons?: SalesPerson[]
+    salesPersons?: SalesPerson[],
+    isJustMoved?: boolean
 }
 
-export default function TaskCard({ task, types, users = [], salesPersons = [], onClick, onMove, onDelete }: TaskCardProps) {
+export default function TaskCard({ task, types, users = [], salesPersons = [], onClick, onMove, onDelete, isJustMoved }: TaskCardProps) {
     const currentUser = useAuthStore(state => state.user)
     const typeInfo = types.find(t => t.id === task.typeId)
     
@@ -41,13 +42,20 @@ export default function TaskCard({ task, types, users = [], salesPersons = [], o
     return (
         <div className={clsx(
             "p-4 rounded-lg shadow-sm border hover:shadow-md transition-shadow cursor-pointer flex flex-col gap-2",
-            "bg-white border-gray-100", priorityStyles 
+            "bg-white border-gray-100", priorityStyles,
+            isJustMoved && "animate-highlight ring-2 ring-yellow-200 z-20"
         )}
             onClick={() => onClick(task)}    
         >
             <div className="flex items-center gap-2">
                 <span className="w-2 h-2 rounded-full" style={{ backgroundColor: typeInfo?.colorCode || '#9ca3af'  }}></span>
                 <span className="text-xs text-gray-500">{typeInfo?.name || '未知'}</span>
+                {!!task.progressCount && task.progressCount > 0 && (
+                     <span className="flex items-center gap-1 text-[10px] text-blue-500 bg-blue-50 px-1.5 py-0.5 rounded-md font-medium ml-1">
+                        <MessageSquare size={10} />
+                        {task.progressCount}
+                     </span>
+                )}
                 <span className={clsx("ml-auto text-xs font-mono", priorityTextClass)}>
                     {task.priority === 2 ? '!!! 紧急' : task.priority === 1 ? '! 重要' : '# 普通'}
                 </span>
@@ -77,7 +85,11 @@ export default function TaskCard({ task, types, users = [], salesPersons = [], o
                 <div className="flex justify-between">
                     <span>创建:</span><span>{formatDate(task.createdAt)}</span>
                 </div>
-                
+                {task.status === 'DONE' && (
+                    <div className="flex justify-between text-green-600">
+                        <span>完成:</span><span>{formatDate(task.completedAt)}</span>
+                    </div>
+                )}
                 <div className="flex justify-between text-blue-400">
                     <span>{task.status === 'DONE' ? '总耗时:' : '已耗时:'}</span>
                     <span className={durationText === '未开始' ? 'text-gray-400' : ''}>{durationText}</span>
